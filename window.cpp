@@ -1,7 +1,11 @@
 #include "window.h"
 
 #include <QLabel>
+#include <QMouseEvent>
 #include <QSlider>
+#include <QWheelEvent>
+
+#include <algorithm>
 
 Window::Window() {
   // Add label for FPS
@@ -42,7 +46,7 @@ Window::Window() {
     return slider;
   };
 
-  makeSlider(a_, 30,  20, "a"); // :ASK: такой костылинг пикселей это норм?
+  makeSlider(a_, 30, 20, "a");
   makeSlider(b_, 55, 10, "b");
   makeSlider(c_, 80, -20, "c");
   makeSlider(d_, 105, -20, "d");
@@ -50,6 +54,16 @@ Window::Window() {
 }
 
 Window::~Window() { program_.reset(); }
+
+QVector2D Window::screenToWorld(const QPointF &screen) const {
+  const float w = (float)(std::max(1, width()));
+  const float h = (float)(std::max(1, height()));
+  const float u = (float)(screen.x()) / w;
+  const float v = (float)(screen.y()) / h;
+  const float wx = xMin_ + u * (xMax_ - xMin_);
+  const float wy = yMax_ - v * (yMax_ - yMin_);
+  return {wx, wy};
+}
 
 void Window::onInit() {
   program_ = std::make_unique<QOpenGLShaderProgram>(this);
@@ -72,7 +86,6 @@ void Window::onInit() {
   vbo_.create();
   vbo_.bind();
   vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-  // Points will be filled in onRender from a..e
   vbo_.allocate(nullptr, 0);
 
   program_->enableAttributeArray(0);
@@ -90,19 +103,17 @@ void Window::onInit() {
 void Window::onRender() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  model_.setToIdentity();
-  model_.translate(0, 0, -1.5);
-  view_.setToIdentity();
-  const auto mvp = projection_ * view_ * model_;
+  projection_.setToIdentity();
+  projection_.ortho(xMin_, xMax_, yMin_, yMax_, -1.f, 1.f);
 
   program_->bind();
-  program_->setUniformValue(mvpUniform_, mvp);
+  program_->setUniformValue(mvpUniform_, projection_);
   program_->setUniformValue(colorUniform_, QColor(255, 255, 255));
 
   vao_.bind();
 
-  float begin = -10;
-  float end = 10;
+  float begin = xMin_;
+  float end = xMax_;
 
   constexpr int n = 1000;
 
@@ -131,14 +142,79 @@ void Window::onRender() {
 }
 
 void Window::onResize(const size_t width, const size_t height) {
-  // Configure viewport
   glViewport(0, 0, static_cast<GLint>(width), static_cast<GLint>(height));
 
-  // Configure matrix
-  const auto aspect = static_cast<float>(width) / static_cast<float>(height);
-  const auto zNear = 0.1f;
-  const auto zFar = 100.0f;
-  const auto fov = 60.0f;
+  float safeHeight = (float)std::max<size_t>(1, height);
+  float aspect = (float)(width) / safeHeight;
+
+  float centerX = (xMin_ + xMax_) / 2;
+  float centerY = (yMin_ + yMax_) / 2;
+
+  float visibleHeight = yMax_ - yMin_;
+  float visibleWidth = visibleHeight * aspect;
+
+  float halfWidth = visibleWidth / 2;
+  float halfHeight = visibleHeight / 2;
+
+  xMin_ = centerX - halfWidth;
+  xMax_ = centerX + halfWidth;
+  yMin_ = centerY - halfHeight;
+  yMax_ = centerY + halfHeight;
+
   projection_.setToIdentity();
-  projection_.perspective(fov, aspect, zNear, zFar);
+  projection_.ortho(xMin_, xMax_, yMin_, yMax_, -1.f, 1.f);
+}
+
+void Window::mousePressEvent(QMouseEvent *event) {
+  if (event->button() == Qt::LeftButton) {
+    dragging_ = true;
+    lastMousePos_ = event->pos();
+  }
+  QOpenGLWidget::mousePressEvent(event);
+}
+
+void Window::mouseMoveEvent(QMouseEvent *event) {
+  if (dragging_) {
+    QPoint delta = event->pos() - lastMousePos_;
+    lastMousePos_ = event->pos();
+
+    float w = (float)(std::max(1, width()));
+    float h = (float)std::max(1, height());
+    float worldDx = delta.x() / w * (xMax_ - xMin_);
+    float worldDy = delta.y() / h * (yMax_ - yMin_);
+    xMin_ -= worldDx;
+    xMax_ -= worldDx;
+    yMin_ += worldDy;
+    yMax_ += worldDy;
+
+    update();
+  }
+  QOpenGLWidget::mouseMoveEvent(event);
+}
+
+void Window::mouseReleaseEvent(QMouseEvent *event) {
+  if (event->button() == Qt::LeftButton) {
+    dragging_ = false;
+  }
+  QOpenGLWidget::mouseReleaseEvent(event);
+}
+
+void Window::wheelEvent(QWheelEvent *event) {
+  float factor = event->angleDelta().y() > 0 ? 0.9 : 1.1;
+
+  QPointF cursor = event->position();
+  QVector2D world = screenToWorld(cursor);
+
+  float u = cursor.x() / float(width());
+  float v = cursor.y() / float(height());
+
+  float newW = (xMax_ - xMin_) * factor;
+  float newH = (yMax_ - yMin_) * factor;
+
+  xMin_ = world.x() - u * newW;
+  xMax_ = world.x() + (1.f - u) * newW;
+  yMax_ = world.y() + v * newH;
+  yMin_ = world.y() - (1.f - v) * newH;
+
+  update();
 }
