@@ -21,6 +21,7 @@ public:
     void onRender() override;
     void onResize(size_t width, size_t height) override;
 
+
 private:
     QElapsedTimer timer_;
     GLint colorUniform_ = -1;
@@ -41,4 +42,10 @@ private:
 
     bool animated_ = true;
     bool сolorAnimated_ = animated_;
+
+    float a_ = 0.f;
+    float b_ = 0.f;
+    float c_ = 0.f;
+    float d_ = 0.f;
+    float e_ = 0.f;
 };

@@ -1,6 +1,9 @@
 #include "window.h"
 
 #include <QLabel>
+#include <QSlider>
+
+
 
 constexpr std::array<GLfloat, 21u> vertices = {
     0.0f, 0.5f, 1.f,  0.f,  0.f,   0.5f, 1.0f, -0.5f, -0.5f, 0.f,  1.f,
@@ -8,6 +11,8 @@ constexpr std::array<GLfloat, 21u> vertices = {
 };
 
 constexpr std::array<GLuint, 3u> indices = {0, 1, 2};
+
+
 
 Window::Window()
 {
@@ -18,11 +23,43 @@ Window::Window()
     fpsLabel->adjustSize();
     fpsLabel->move(0, 0);
     fpsLabel->raise();
-
     connect(this, &Window::fpsUpdated, [fpsLabel](double fps) {
         fpsLabel->setText(QString("FPS: %1").arg(fps, 0, 'f', 0));
         fpsLabel->adjustSize();
     });
+
+    //https://doc.qt.io/qt-6/qslider.html
+    auto makeSlider = [this](float& coeff, int y, int def, const QString& name) {
+
+      auto* label = new QLabel(name, this);
+      label->setStyleSheet("QLabel { color: white; }");
+      label->move(10, y);
+
+      auto* valueLabel = new QLabel(QString::number(def * 0.1f, 'f', 1), this);
+      valueLabel->setStyleSheet("QLabel { color: white; }");
+      valueLabel->move(240, y);
+
+      auto* slider = new QSlider(Qt::Horizontal, this);
+      slider->setRange(-50, 50);
+      slider->setSingleStep(1);
+      slider->setPageStep(20);
+      slider->setValue(def);
+      slider->setGeometry(30, y, 200, 20);
+      connect(slider, &QSlider::valueChanged, this, [this, &coeff, valueLabel](int value) {
+        coeff = value * 0.1;
+        valueLabel->setText(QString::number(coeff, 'f', 1));
+        valueLabel->adjustSize();
+        update();
+      });
+      return slider;
+    };
+
+    makeSlider(a_, 30, 10, "a"); // :ASK: такой костылинг пикселей это норм?
+    makeSlider(b_, 55, 0, "b") ;
+    makeSlider(c_, 80, 0, "c");
+    makeSlider(d_, 105, 0, "d");
+    makeSlider(e_, 130, 0, "e");
+
 }
 
 Window::~Window()
