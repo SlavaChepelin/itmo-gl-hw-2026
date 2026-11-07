@@ -101,7 +101,8 @@ void Window::onInit()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    // Clear all FBO buffers
+    // Opaque clear color (Wayland alpha compositing)
+    glClearColor(0.f, 0.f, 0.f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
