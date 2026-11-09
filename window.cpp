@@ -53,10 +53,6 @@ Window::Window() {
     rotSpeed_ = v * 0.1f;
     update();
   });
-  makeSlider(80, 0, 10, 7, "col", [this](int v) {
-    color_ = v * 0.1f;
-    update();
-  });
 }
 
 Window::~Window() {
@@ -96,7 +92,6 @@ void Window::onInit() {
   nUniform_ = program_->uniformLocation("uN");
   timeUniform_ = program_->uniformLocation("uTime");
   rotSpeedUniform_ = program_->uniformLocation("uRotSpeed");
-  colorUniform_ = program_->uniformLocation("uColor");
 
   vao_.create();
   vao_.bind();
@@ -128,7 +123,6 @@ void Window::onRender() {
   program_->setUniformValue(nUniform_, n_);
   program_->setUniformValue(timeUniform_, time);
   program_->setUniformValue(rotSpeedUniform_, rotSpeed_);
-  program_->setUniformValue(colorUniform_, color_);
 
   glActiveTexture(GL_TEXTURE0);
   texture_->bind();

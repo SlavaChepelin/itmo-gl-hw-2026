@@ -36,7 +36,6 @@ private:
   GLint nUniform_ = -1;
   GLint timeUniform_ = -1;
   GLint rotSpeedUniform_ = -1;
-  GLint colorUniform_ = -1;
 
   QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
   QOpenGLVertexArrayObject vao_;
@@ -46,12 +45,11 @@ private:
 
   float n_ = 6.f;
   float rotSpeed_ = 0.4f;
-  float color_ = 0.7f;
 
-  float xMin_ = -1.f;
-  float xMax_ = 1.f;
-  float yMin_ = -1.f;
-  float yMax_ = 1.f;
+  float xMin_ = -1.35f;
+  float xMax_ = 1.35f;
+  float yMin_ = -1.35f;
+  float yMax_ = 1.35f;
 
   bool dragging_ = false;
   QPoint lastMousePos_;

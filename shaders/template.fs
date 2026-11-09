@@ -1,58 +1,81 @@
 #version 330 core
 
-uniform sampler2D tex_2d;
 uniform vec2 uResolution;
 uniform vec2 uViewMin;
 uniform vec2 uViewMax;
 uniform float uN;
 uniform float uTime;
 uniform float uRotSpeed;
-uniform float uColor;
 
 out vec4 out_col;
 
-const float PI = 3.14159265;
-
-float map(float v, float a, float b, float c, float d) {
-    return c + (v - a) / (b - a) * (d - c);
-}
-
-vec2 rotate(vec2 p, float a) {
-    float c = cos(a);
-    float s = sin(a);
-    return vec2(c * p.x - s * p.y, s * p.x + c * p.y);
-}
-
-vec2 kale(vec2 p, float n) {
-    float a = atan(p.y, p.x);
-    float r = length(p);
-    a = abs(mod(a, 2.0 * PI / n) - PI / n);
-    return r * vec2(cos(a), sin(a));
-}
-
-vec3 hsv2rgb(vec3 c) {
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
 void main() {
-    vec2 uv = gl_FragCoord.xy / uResolution;
-    vec2 p;
-    p.x = map(uv.x, 0.0, 1.0, uViewMin.x, uViewMax.x);
-    p.y = map(uv.y, 0.0, 1.0, uViewMin.y, uViewMax.y);
+    float pixelX = gl_FragCoord.x;
+    float pixelY = gl_FragCoord.y;
+    float uvx = pixelX / uResolution.x;
+    float uvy = pixelY / uResolution.y;
 
-    p = rotate(p, uTime * uRotSpeed);
+    float zr = uViewMin.x + (uvx - 0.0) / (1.0 - 0.0) * (uViewMax.x - uViewMin.x);
+    float zi = uViewMin.y + (uvy - 0.0) / (1.0 - 0.0) * (uViewMax.y - uViewMin.y);
 
-    vec2 k = kale(p, uN);
+    vec2 z1;
+    z1.x = zi;
+    z1.y = zr;
 
-    vec2 texUV = k * 0.5 + 0.5;
-    texUV.y = 1.0 - texUV.y;
-    vec3 tex = texture(tex_2d, texUV).rgb;
+    vec2 z2;
+    z2.x = 0.0;
+    z2.y = 0.0;
 
-    float hue = atan(k.y, k.x) / (2.0 * PI) + 0.5 + uTime * 0.05;
-    vec3 tint = hsv2rgb(vec3(fract(hue), 0.75, 1.0));
-    vec3 colored = tex * tint;
+    float cReal = 0.5667;
+    float cImag = 0.0;
 
-    out_col = vec4(mix(tex, colored, uColor), 1.0);
+    float angleX = uTime * 0.4;
+    float angleY = uTime * 0.35;
+    float sinVal = sin(angleX);
+    float cosVal = cos(angleY);
+    float amount = uRotSpeed * 0.15;
+
+    float pReal = -0.5 + amount * sinVal;
+    float pImag = 0.0 + amount * cosVal;
+
+    int NUMITR = 200;
+    float MAXZ = 4.0;
+
+    int count = 0;
+
+    for (int i = 0; i <= NUMITR; i++) {
+        float lengthSquared = z1.x * z1.x + z1.y * z1.y;
+        if (lengthSquared >= MAXZ) {
+            break;
+        }
+        float squareReal = z1.x * z1.x - z1.y * z1.y;
+        float squareImag = 2.0 * z1.x * z1.y;
+        float multReal = pReal * z2.x - pImag * z2.y;
+        float multImag = pReal * z2.y + pImag * z2.x;
+        vec2 z;
+        z.x = squareReal + cReal + multReal;
+        z.y = squareImag + cImag + multImag;
+
+        z2 = z1;
+        z1 = z;
+        count = i + 1;
+    }
+
+    if (count > NUMITR) {
+        out_col = vec4(0.0, 0.0, 0.0, 1.0);
+    } else {
+        float k = uN;
+        if (k < 1.0) {
+            k = 1.0;
+        }
+
+        float value = float(count) * k * 0.01;
+        float t = value - floor(value);
+
+        float red = t;
+        float green = t * 0.5;
+        float blue = 1.0 - t;
+
+        out_col = vec4(red, green, blue, 1.0);
+    }
 }
