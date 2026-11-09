@@ -7,38 +7,50 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLVertexArrayObject>
-#include <QWindow>
+#include <QPoint>
+#include <QVector2D>
 
-class Window : public OpenGLWidget
-{
-    Q_OBJECT
+class Window : public OpenGLWidget {
+  Q_OBJECT
 
 public:
-    Window();
-    ~Window();
+  Window();
+  ~Window();
 
-    void onInit() override;
-    void onRender() override;
-    void onResize(size_t width, size_t height) override;
+  void onInit() override;
+  void onRender() override;
+  void onResize(size_t width, size_t height) override;
+
+protected:
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
 
 private:
-    QElapsedTimer timer_;
-    GLint colorUniform_ = -1;
-    float hue_ = 0;
+  QVector2D screenToWorld(const QPointF &screen) const;
 
-    GLint mvpUniform_ = -1;
+  GLint resolutionUniform_ = -1;
+  GLint viewMinUniform_ = -1;
+  GLint viewMaxUniform_ = -1;
+  GLint nUniform_ = -1;
+  GLint timeUniform_ = -1;
+  GLint rotSpeedUniform_ = -1;
 
-    QMatrix4x4 model_;
-    QMatrix4x4 view_;
-    QMatrix4x4 projection_;
+  QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
+  QOpenGLVertexArrayObject vao_;
+  std::unique_ptr<QOpenGLTexture> texture_;
+  std::unique_ptr<QOpenGLShaderProgram> program_;
+  QElapsedTimer timer_;
 
-    QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
-    QOpenGLBuffer ibo_{QOpenGLBuffer::Type::IndexBuffer};
-    QOpenGLVertexArrayObject vao_;
+  float n_ = 6.f;
+  float rotSpeed_ = 0.4f;
 
-    std::unique_ptr<QOpenGLTexture> texture_;
-    std::unique_ptr<QOpenGLShaderProgram> program_;
+  float xMin_ = -1.35f;
+  float xMax_ = 1.35f;
+  float yMin_ = -1.35f;
+  float yMax_ = 1.35f;
 
-    bool animated_ = true;
-    bool сolorAnimated_ = animated_;
+  bool dragging_ = false;
+  QPoint lastMousePos_;
 };

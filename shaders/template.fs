@@ -1,23 +1,81 @@
 #version 330 core
 
-uniform sampler2D tex_2d;
-uniform vec4 color;
-
-in vec3 vert_col;
-in vec2 vert_tex;
+uniform vec2 uResolution;
+uniform vec2 uViewMin;
+uniform vec2 uViewMax;
+uniform float uN;
+uniform float uTime;
+uniform float uRotSpeed;
 
 out vec4 out_col;
 
 void main() {
-        // Y-координата у формата jpg перевернута относительно OpenGL
-        vec4 texel = texture(tex_2d, vec2(vert_tex.x, 1.0 - vert_tex.y));
+    float pixelX = gl_FragCoord.x;
+    float pixelY = gl_FragCoord.y;
+    float uvx = pixelX / uResolution.x;
+    float uvy = pixelY / uResolution.y;
 
-        // https://ru.wikipedia.org/wiki/Оттенки_серого
-        float greyscale_factor = dot(texel.rgb, vec3(0.21, 0.71, 0.07));
-        vec3 semi_greyscale = mix(vec3(greyscale_factor), vert_col.rgb, 0.7f);
+    float zr = uViewMin.x + (uvx - 0.0) / (1.0 - 0.0) * (uViewMax.x - uViewMin.x);
+    float zi = uViewMin.y + (uvy - 0.0) / (1.0 - 0.0) * (uViewMax.y - uViewMin.y);
 
-        // Анимированный цвет из uniform
-        vec3 animated_color = mix(color.rgb, semi_greyscale, 0.7f);
+    vec2 z1;
+    z1.x = zi;
+    z1.y = zr;
 
-        out_col = vec4(animated_color, 1.0);
+    vec2 z2;
+    z2.x = 0.0;
+    z2.y = 0.0;
+
+    float cReal = 0.5667;
+    float cImag = 0.0;
+
+    float angleX = uTime * 0.4;
+    float angleY = uTime * 0.35;
+    float sinVal = sin(angleX);
+    float cosVal = cos(angleY);
+    float amount = uRotSpeed * 0.15;
+
+    float pReal = -0.5 + amount * sinVal;
+    float pImag = 0.0 + amount * cosVal;
+
+    int NUMITR = 200;
+    float MAXZ = 4.0;
+
+    int count = 0;
+
+    for (int i = 0; i <= NUMITR; i++) {
+        float lengthSquared = z1.x * z1.x + z1.y * z1.y;
+        if (lengthSquared >= MAXZ) {
+            break;
+        }
+        float squareReal = z1.x * z1.x - z1.y * z1.y;
+        float squareImag = 2.0 * z1.x * z1.y;
+        float multReal = pReal * z2.x - pImag * z2.y;
+        float multImag = pReal * z2.y + pImag * z2.x;
+        vec2 z;
+        z.x = squareReal + cReal + multReal;
+        z.y = squareImag + cImag + multImag;
+
+        z2 = z1;
+        z1 = z;
+        count = i + 1;
+    }
+
+    if (count > NUMITR) {
+        out_col = vec4(0.0, 0.0, 0.0, 1.0);
+    } else {
+        float k = uN;
+        if (k < 1.0) {
+            k = 1.0;
+        }
+
+        float value = float(count) * k * 0.01;
+        float t = value - floor(value);
+
+        float red = t;
+        float green = t * 0.5;
+        float blue = 1.0 - t;
+
+        out_col = vec4(red, green, blue, 1.0);
+    }
 }
