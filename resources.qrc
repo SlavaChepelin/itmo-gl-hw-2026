@@ -2,6 +2,6 @@
     <qresource prefix="/">
         <file>shaders/template.fs</file>
         <file>shaders/template.vs</file>
-        <file>textures/cat.jpg</file>
+        <file>textures/kolei.jpg</file>
     </qresource>
 </RCC>

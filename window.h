@@ -2,53 +2,57 @@
 
 #include "openglwidget.h"
 
+#include <QElapsedTimer>
 #include <QOpenGLBuffer>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 #include <QOpenGLVertexArrayObject>
 #include <QPoint>
 #include <QVector2D>
 
-class Window : public OpenGLWidget
-{
-    Q_OBJECT
+class Window : public OpenGLWidget {
+  Q_OBJECT
 
 public:
-    Window();
-    ~Window();
+  Window();
+  ~Window();
 
-    void onInit() override;
-    void onRender() override;
-    void onResize(size_t width, size_t height) override;
+  void onInit() override;
+  void onRender() override;
+  void onResize(size_t width, size_t height) override;
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
-    void wheelEvent(QWheelEvent* event) override;
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
 
 private:
-    QVector2D screenToWorld(const QPointF& screen) const;
+  QVector2D screenToWorld(const QPointF &screen) const;
 
-    GLint colorUniform_ = -1;
-    GLint mvpUniform_ = -1;
+  GLint resolutionUniform_ = -1;
+  GLint viewMinUniform_ = -1;
+  GLint viewMaxUniform_ = -1;
+  GLint nUniform_ = -1;
+  GLint timeUniform_ = -1;
+  GLint rotSpeedUniform_ = -1;
+  GLint colorUniform_ = -1;
 
-    QMatrix4x4 projection_;
+  QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
+  QOpenGLVertexArrayObject vao_;
+  std::unique_ptr<QOpenGLTexture> texture_;
+  std::unique_ptr<QOpenGLShaderProgram> program_;
+  QElapsedTimer timer_;
 
-    QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
-    QOpenGLVertexArrayObject vao_;
+  float n_ = 6.f;
+  float rotSpeed_ = 0.4f;
+  float color_ = 0.7f;
 
-    std::unique_ptr<QOpenGLShaderProgram> program_;
+  float xMin_ = -1.f;
+  float xMax_ = 1.f;
+  float yMin_ = -1.f;
+  float yMax_ = 1.f;
 
-    float a_ = 0.f;
-    float b_ = 0.f;
-    float c_ = 0.f;
-    float d_ = 0.f;
-    float e_ = 0.f;
-    float xMin_ = -10.f;
-    float xMax_ = 10.f;
-    float yMin_ = -10.f;
-    float yMax_ = 10.f;
-
-    bool dragging_ = false;
-    QPoint lastMousePos_;
+  bool dragging_ = false;
+  QPoint lastMousePos_;
 };
